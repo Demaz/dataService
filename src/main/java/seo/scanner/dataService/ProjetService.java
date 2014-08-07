@@ -158,14 +158,14 @@ public class ProjetService {
 	    return users;
 	}
 
-	public ProjetListUrl addListUrl(final ProjetListUrl projetListUrl,final Integer userUid,final Integer projetUid) {
+	public ProjetListUrl addListUrl(final ProjetListUrl projetListUrl,final Integer userUid) {
 		KeyHolder keyHolder = new GeneratedKeyHolder();
 		getJdbcTemplate().update(
 			    new PreparedStatementCreator() {
 			        public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
 			            PreparedStatement ps =
 			                connection.prepareStatement("insert into tprojetslisturl(projetuid,name,description) values(?,?,?)", new String[] {"uid"});
-			            ps.setInt(1, projetUid);
+			            ps.setInt(1, projetListUrl.getProjetUid());
 			            ps.setString(2, projetListUrl.getName());
 			            ps.setString(3, projetListUrl.getDescription());
 			            return ps;
