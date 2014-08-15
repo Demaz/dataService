@@ -157,6 +157,18 @@ public class ProjetService {
 			}
 	    return users;
 	}
+	
+	public List<User> getComptesUsers(Integer projetUid,Integer userUid) {
+		List<User> users = new ArrayList<User>();
+		List<Map<String, Object>> rowsUsers = getJdbcTemplate().queryForList("Select uid, name , username , email from tusers where uid not in (Select userUid from tprojetsusers where projetUid = ?) and compteuid in (Select c.uid from tusers as u inner join tcomptes as c on u.compteUid = c.uid where u.uid = ?)",projetUid,userUid);
+			for(Map<String, Object> row : rowsUsers) {
+				User user = new User();
+				user.setName(row.get("name").toString());
+				user.setUid(Integer.valueOf(row.get("uid").toString()));
+				users.add(user);
+			}
+	    return users;
+	}
 
 	public ProjetListUrl addListUrl(final ProjetListUrl projetListUrl,final Integer userUid) {
 		KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -223,5 +235,21 @@ public class ProjetService {
 	
 	public void deleteUrlInList(Integer uid,Integer userUid) {
 		getJdbcTemplate().update("delete from turltocheck where uid = ? and projetListUrlUid in (Select plu.uid from tprojetslisturl plu inner join tprojets p on plu.projetuid = p.uid inner join tprojetsusers pu on p.uid = pu.projetuid where useruid = ?)",uid,userUid);
+	}
+
+	public Integer addProjetUser(final Integer userUid, final Integer projetUid) {
+		KeyHolder keyHolder = new GeneratedKeyHolder();
+		getJdbcTemplate().update(
+			    new PreparedStatementCreator() {
+			        public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
+			            PreparedStatement ps =
+			                connection.prepareStatement("insert into tprojetsusers(userUid,projetUid) values(?,?)", new String[] {"uid"});
+			            ps.setInt(1, userUid);
+			            ps.setInt(2, projetUid);
+			            return ps;
+			        }
+			    },
+			    keyHolder);
+		return  keyHolder.getKey().intValue();
 	}
 }
