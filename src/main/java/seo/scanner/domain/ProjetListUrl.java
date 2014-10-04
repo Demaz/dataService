@@ -4,45 +4,73 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProjetListUrl {
-	
+
 	private Integer uid;
 	private Integer projetUid;
 	private String name;
-	
-	public Integer getUid() {
-		return uid;
+	private Integer typeUid;
+	private Integer nbUrl;
+
+	private String description;
+
+	public Integer getNbUrl() {
+		return nbUrl;
 	}
-	public void setUid(Integer uid) {
-		this.uid = uid;
+
+	public void setNbUrl(Integer nbUrl) {
+		this.nbUrl = nbUrl;
 	}
-	public Integer getProjetUid() {
-		return projetUid;
-	}
-	public void setProjetUid(Integer projetUid) {
-		this.projetUid = projetUid;
-	}
-	public String getName() {
-		return name;
-	}
-	public void setName(String name) {
-		this.name = name;
-	}
+	private List<UrlToCheck> urlToCheckList;
+
 	public String getDescription() {
 		return description;
 	}
-	public void setDescription(String description) {
-		this.description = description;
+
+	public String getName() {
+		return name;
 	}
+
+	public Integer getProjetUid() {
+		return projetUid;
+	}
+
+	public Integer getTypeUid() {
+		return typeUid;
+	}
+
+	public Integer getUid() {
+		return uid;
+	}
+
 	public List<UrlToCheck> getUrlToCheckList() {
-		if(urlToCheckList == null) {
+		if (urlToCheckList == null) {
 			urlToCheckList = new ArrayList<UrlToCheck>();
 		}
 		return urlToCheckList;
 	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+
+	public void setProjetUid(Integer projetUid) {
+		this.projetUid = projetUid;
+	}
+
+	public void setTypeUid(Integer typeUid) {
+		this.typeUid = typeUid;
+	}
+
+	public void setUid(Integer uid) {
+		this.uid = uid;
+	}
 	public void setUrlToCheckList(List<UrlToCheck> urlToCheckList) {
 		this.urlToCheckList = urlToCheckList;
 	}
-	private String description;
-	private List<UrlToCheck> urlToCheckList;
 
 }

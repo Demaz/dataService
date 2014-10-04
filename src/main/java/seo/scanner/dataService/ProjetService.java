@@ -17,10 +17,12 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.util.StringUtils;
 
+import seo.scanner.domain.Parameters;
 import seo.scanner.domain.Projet;
 import seo.scanner.domain.ProjetListUrl;
 import seo.scanner.domain.UrlToCheck;
 import seo.scanner.domain.User;
+import seo.scanner.domain.Useragent;
 
 public class ProjetService {
 	
@@ -85,7 +87,7 @@ public class ProjetService {
 	
 	public List<ProjetListUrl> getProjetUrlListes(Integer userUid,Integer projetUid) {
 		List<ProjetListUrl> projetListUrlListe = new ArrayList<ProjetListUrl>();
-		List<Map<String, Object>> rowsProjetListUrl = getJdbcTemplate().queryForList("Select plu.uid, plu.projetUid, plu.name, plu.description from tprojetsListUrl plu inner join tprojets p on plu.projetUid = p.uid where plu.projetUid = ? and p.uid in (select projetUid from tprojetsusers pu where pu.userUid = ?)",projetUid, userUid);
+		List<Map<String, Object>> rowsProjetListUrl = getJdbcTemplate().queryForList("Select plu.uid, plu.projetUid, plu.name, plu.description , (Select count(*) from turltocheck where projetlisturluid = plu.uid) as nburl from tprojetsListUrl plu inner join tprojets p on plu.projetUid = p.uid where plu.projetUid = ? and p.uid in (select projetUid from tprojetsusers pu where pu.userUid = ?)",projetUid, userUid);
 		for(Map<String, Object> row : rowsProjetListUrl) {
 			projetListUrlListe.add(mapProjetListUrlWithResultSet(row));
 		}
@@ -94,7 +96,7 @@ public class ProjetService {
 	
 	public ProjetListUrl getProjetListUrl(Integer userUid,Integer projetUid, Integer projetListUrlUid) {
 		ProjetListUrl projetListUrl = new ProjetListUrl();
-		List<Map<String, Object>> rowsProjetListUrl = getJdbcTemplate().queryForList("Select plu.uid, plu.projetUid, plu.name, plu.description from tprojetsListUrl plu inner join tprojets p on plu.projetUid = p.uid where plu.projetUid = ? and p.uid in (Select projetUid from tprojetsusers pu where pu.userUid = ?) and plu.uid = ?",projetUid, userUid,projetListUrlUid);
+		List<Map<String, Object>> rowsProjetListUrl = getJdbcTemplate().queryForList("Select plu.uid, plu.projetUid, plu.name, plu.description , (Select count(*) from turltocheck where projetlisturluid = plu.uid) as nburl from tprojetsListUrl plu inner join tprojets p on plu.projetUid = p.uid where plu.projetUid = ? and p.uid in (Select projetUid from tprojetsusers pu where pu.userUid = ?) and plu.uid = ?",projetUid, userUid,projetListUrlUid);
 		if(rowsProjetListUrl.size() > 0) {
 		projetListUrl = mapProjetListUrlWithResultSet(rowsProjetListUrl.get(0));
 				List<Map<String, Object>> rowsUrlToCheck = getJdbcTemplate().queryForList("Select uid, url,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,projetListUrlUid from turltocheck where projetlisturluid = ?",projetListUrl.getUid());
@@ -134,6 +136,7 @@ public class ProjetService {
 		projetListUrl.setProjetUid(Integer.valueOf(row.get("projetUid").toString()));
 		projetListUrl.setName(row.get("name").toString());
 		projetListUrl.setDescription(row.get("description").toString());
+		projetListUrl.setNbUrl(Integer.valueOf(row.get("nburl").toString()));
 		return projetListUrl;
 		
 	}
@@ -176,10 +179,11 @@ public class ProjetService {
 			    new PreparedStatementCreator() {
 			        public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
 			            PreparedStatement ps =
-			                connection.prepareStatement("insert into tprojetslisturl(projetuid,name,description) values(?,?,?)", new String[] {"uid"});
+			                connection.prepareStatement("insert into tprojetslisturl(projetuid,name,description,typeUid) values(?,?,?,?)", new String[] {"uid"});
 			            ps.setInt(1, projetListUrl.getProjetUid());
 			            ps.setString(2, projetListUrl.getName());
 			            ps.setString(3, projetListUrl.getDescription());
+			            ps.setInt(4, projetListUrl.getTypeUid());
 			            return ps;
 			        }
 			    },
@@ -251,5 +255,47 @@ public class ProjetService {
 			    },
 			    keyHolder);
 		return  keyHolder.getKey().intValue();
+	}
+
+	public List<Useragent> getUseragents() {
+		List<Useragent> useragents = new ArrayList<Useragent>();
+		List<Map<String, Object>> rowsUsers = getJdbcTemplate().queryForList("Select name , useragent, uid from tuseragents");
+			for(Map<String, Object> row : rowsUsers) {
+				Useragent useragent = new Useragent();
+				useragent.setName(row.get("name").toString());
+				useragent.setUseragent(row.get("useragent").toString());
+				useragent.setUid(Integer.valueOf(row.get("uid").toString()));
+				useragents.add(useragent);
+			}
+	    return useragents;
+	}
+
+	public Parameters saveParameters(final Parameters parameters) {
+		getJdbcTemplate().update(
+			    new PreparedStatementCreator() {
+			        public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
+			            PreparedStatement ps =
+			                connection.prepareStatement("update tprojetslisturlparameters set useragentuid = ?,planification = ? where uid = ? and projetListUrlUid");
+			            ps.setInt(1, parameters.getUserAgentUid());
+			            ps.setString(2, parameters.getPlanification());
+			            ps.setInt(3, parameters.getUserAgentUid());
+			            ps.setInt(4, parameters.getProjetListUrlUid());
+			            return ps;
+			        }
+			    });
+		return parameters;
+	}
+
+	public Parameters getParameters(Integer projetListUrlUid) {
+		Parameters parameters = new Parameters();
+		List<Map<String, Object>> rowsUsers = getJdbcTemplate().queryForList("Select uid, useragentuid, planification , projetListUrlUid from tprojetslisturlparameters");
+		for(Map<String, Object> row : rowsUsers) {
+			parameters.setPlanification(row.get("planification").toString());
+			parameters.setUserAgentUid(Integer.valueOf(row.get("useragentuid").toString()));
+			parameters.setProjetListUrlUid(Integer.valueOf(row.get("projetListUrlUid").toString()));
+			parameters.setUid(Integer.valueOf(row.get("uid").toString()));
+		}
+		
+		return parameters;
 	}
 }
