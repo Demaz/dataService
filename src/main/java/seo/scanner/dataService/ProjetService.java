@@ -99,7 +99,7 @@ public class ProjetService {
 		List<Map<String, Object>> rowsProjetListUrl = getJdbcTemplate().queryForList("Select plu.uid, plu.projetUid, plu.name, plu.description , (Select count(*) from turltocheck where projetlisturluid = plu.uid) as nburl from tprojetsListUrl plu inner join tprojets p on plu.projetUid = p.uid where plu.projetUid = ? and p.uid in (Select projetUid from tprojetsusers pu where pu.userUid = ?) and plu.uid = ?",projetUid, userUid,projetListUrlUid);
 		if(rowsProjetListUrl.size() > 0) {
 		projetListUrl = mapProjetListUrlWithResultSet(rowsProjetListUrl.get(0));
-				List<Map<String, Object>> rowsUrlToCheck = getJdbcTemplate().queryForList("Select uid, url,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,projetListUrlUid from turltocheck where projetlisturluid = ?",projetListUrl.getUid());
+				List<Map<String, Object>> rowsUrlToCheck = getJdbcTemplate().queryForList("Select uid, url,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,projetListUrlUid from turltocheck where projetlisturluid = ? limit 250",projetListUrl.getUid());
 				projetListUrl.setUrlToCheckList(mapUrlToCheckWithResultSet(rowsUrlToCheck));
 		}
 		return projetListUrl;
@@ -192,6 +192,23 @@ public class ProjetService {
 		
 		return projetListUrl;
 	}
+	
+	public List<UrlToCheck> addUrlsToList(List<UrlToCheck> urlToChecks,Integer projetListUrlUid) {
+		for(UrlToCheck urlToCheck : urlToChecks) {
+			urlToCheck.setProjetListUrlUid(projetListUrlUid);
+			addUrlToList(urlToCheck);
+		}
+		
+		return urlToChecks;
+	}
+	
+	public List<UrlToCheck> addUrslToList(List<UrlToCheck> urlToChecks) {
+		for(UrlToCheck urlToCheck : urlToChecks) {
+			addUrlToList(urlToCheck);
+		}
+		
+		return urlToChecks;
+	}
 
 	public UrlToCheck addUrlToList(final UrlToCheck urlToCheck) {
 		KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -239,6 +256,10 @@ public class ProjetService {
 	
 	public void deleteUrlInList(Integer uid,Integer userUid) {
 		getJdbcTemplate().update("delete from turltocheck where uid = ? and projetListUrlUid in (Select plu.uid from tprojetslisturl plu inner join tprojets p on plu.projetuid = p.uid inner join tprojetsusers pu on p.uid = pu.projetuid where useruid = ?)",uid,userUid);
+	}
+	
+	public void cleanProjetListUrl(Integer projetListUrlUid) {
+		getJdbcTemplate().update("delete from turltocheck where projetListUrlUid = ?",projetListUrlUid);
 	}
 
 	public Integer addProjetUser(final Integer userUid, final Integer projetUid) {

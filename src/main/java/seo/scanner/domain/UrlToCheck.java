@@ -1,15 +1,24 @@
 package seo.scanner.domain;
 
+import com.googlecode.jcsv.annotations.MapToColumn;
+
 public class UrlToCheck {
 	
 	private Integer uid;
 	private Integer projetListUrlUid;
+	@MapToColumn(column=0)
 	private String url;
+	@MapToColumn(column=1)
 	private String redirectionUrl1;
+	@MapToColumn(column=3)
 	private String redirectionUrl2;
+	@MapToColumn(column=5)
 	private String redirectionUrl3;
+	@MapToColumn(column=2)
 	private String redirectionUrlCode1;
+	@MapToColumn(column=4)
 	private String redirectionUrlCode2;
+	@MapToColumn(column=6)
 	private String redirectionUrlCode3;
 	
 	public Integer getProjetListUrlUid() {
@@ -19,9 +28,25 @@ public class UrlToCheck {
 	public void setProjetListUrlUid(Integer projetListUrlUid) {
 		this.projetListUrlUid = projetListUrlUid;
 	}
-
+	
 	public UrlToCheck() {
 		
+	}
+
+	public UrlToCheck(String url,String redirectionUrl1,String redirectionUrlCode1,String redirectionUrl2,String redirectionUrlCode2, String redirectionUrl3,String redirectionUrlCode3) {
+		this.url = url;
+		this.redirectionUrl1 = redirectionUrl1;
+		this.redirectionUrlCode1 = redirectionUrlCode1;
+		
+		this.redirectionUrl2 = redirectionUrl2;
+		this.redirectionUrlCode2 = redirectionUrlCode2;
+		
+		this.redirectionUrl3 = redirectionUrl3;
+		this.redirectionUrlCode3 = redirectionUrlCode3;
+	}
+	
+	public UrlToCheck(String url) {
+		setUrl(url);
 	}
 	
 	public Integer getUid() {
