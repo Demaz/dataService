@@ -17,6 +17,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.util.StringUtils;
 
+import seo.scanner.domain.Alertes;
 import seo.scanner.domain.Parameters;
 import seo.scanner.domain.Projet;
 import seo.scanner.domain.ProjetListUrl;
@@ -292,15 +293,28 @@ public class ProjetService {
 	}
 
 	public Parameters saveParameters(final Parameters parameters) {
+		
+		final String updateQuery = "update tprojetslisturlparameters set useragentuid = ?, jourMois = ?, jour = ?, heure = ?, minute = ?, frequence = ? where  projetListUrlUid = ? and uid = ?";
+		final String insertQuery = "insert into tprojetslisturlparameters(useragentuid,jourMois,jour,heure,minute,frequence,projetListUrlUid) values(?,?,?,?,?,?,?)";
+		
 		getJdbcTemplate().update(
 			    new PreparedStatementCreator() {
 			        public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-			            PreparedStatement ps =
-			                connection.prepareStatement("update tprojetslisturlparameters set useragentuid = ?,planification = ? where uid = ? and projetListUrlUid");
+			        	PreparedStatement ps = null;
+			        	if(parameters.getUid() != null) {
+			        		ps = connection.prepareStatement(updateQuery);
+			        		ps.setInt(8, parameters.getUid());
+			        	} else {
+			        		ps = connection.prepareStatement(insertQuery);
+			        	}
 			            ps.setInt(1, parameters.getUserAgentUid());
-			            ps.setString(2, parameters.getPlanification());
-			            ps.setInt(3, parameters.getUserAgentUid());
-			            ps.setInt(4, parameters.getProjetListUrlUid());
+			            ps.setInt(2, parameters.getJourMois());
+			            ps.setInt(3, parameters.getJour());
+			            ps.setInt(4, parameters.getHeure());
+			            ps.setInt(5, parameters.getMinute());
+			            ps.setString(6, parameters.getFrequence());
+			            ps.setInt(7, parameters.getProjetListUrlUid());
+			            
 			            return ps;
 			        }
 			    });
@@ -309,14 +323,63 @@ public class ProjetService {
 
 	public Parameters getParameters(Integer projetListUrlUid) {
 		Parameters parameters = new Parameters();
-		List<Map<String, Object>> rowsUsers = getJdbcTemplate().queryForList("Select uid, useragentuid, planification , projetListUrlUid from tprojetslisturlparameters");
+		List<Map<String, Object>> rowsUsers = getJdbcTemplate().queryForList("Select uid, useragentuid , projetListUrlUid , jourMois, jour, heure, minute, frequence  from tprojetslisturlparameters");
 		for(Map<String, Object> row : rowsUsers) {
-			parameters.setPlanification(row.get("planification").toString());
+			
 			parameters.setUserAgentUid(Integer.valueOf(row.get("useragentuid").toString()));
 			parameters.setProjetListUrlUid(Integer.valueOf(row.get("projetListUrlUid").toString()));
 			parameters.setUid(Integer.valueOf(row.get("uid").toString()));
+			parameters.setJourMois(Integer.valueOf(row.get("jourMois").toString()));
+			parameters.setJour(Integer.valueOf(row.get("jour").toString()));
+			parameters.setHeure(Integer.valueOf(row.get("heure").toString()));
+			parameters.setMinute(Integer.valueOf(row.get("minute").toString()));
+			parameters.setFrequence(row.get("frequence").toString());
+			
 		}
 		
 		return parameters;
 	}
+
+	public Alertes getAlertes(Integer projetListUrlUid) {
+		Alertes alertes = new Alertes();
+		List<Map<String, Object>> rowsUsers = getJdbcTemplate().queryForList("Select uid, name, description, type, pourcentage  from tprojetslisturlalertes");
+		for(Map<String, Object> row : rowsUsers) {
+			
+			alertes.setUid(Integer.valueOf(row.get("uid").toString()));
+			alertes.setName(row.get("name").toString());
+			alertes.setDescription(row.get("description").toString());
+			alertes.setType(row.get("type").toString());
+			alertes.setPourcentage(Integer.valueOf(row.get("pourcentage").toString()));
+			
+		}
+		return alertes;
+	}
+	
+	public Alertes saveAlertes(final Alertes alertes) {
+		
+		final String updateQuery = "update tprojetslisturlalertes set name  = ?, description = ?, type = ?, pourcentage = ? where projetListUrlUid = ? and uid = ?";
+		final String insertQuery = "insert into tprojetslisturlalertes(name,description,type,pourcentage,projetListUrlUid) values(?,?,?,?,?)";
+		
+		getJdbcTemplate().update(
+			    new PreparedStatementCreator() {
+			        public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
+			        	PreparedStatement ps = null;
+			        	if(alertes.getUid() != null) {
+			        		ps = connection.prepareStatement(updateQuery);
+			        		ps.setInt(8, alertes.getUid());
+			        	} else {
+			        		ps = connection.prepareStatement(insertQuery);
+			        	}
+			            ps.setString(1, alertes.getName());
+			            ps.setString(2, alertes.getDescription());
+			            ps.setString(3, alertes.getType());
+			            ps.setInt(4, alertes.getPourcentage());
+			            ps.setInt(5, alertes.getProjetListUrlUid());
+			            			            
+			            return ps;
+			        }
+			    });
+		return alertes;
+	}
+	
 }
