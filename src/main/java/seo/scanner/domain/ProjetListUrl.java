@@ -5,29 +5,37 @@ import java.util.List;
 
 public class ProjetListUrl {
 
-	private Integer uid;
-	private Integer projetUid;
-	private String name;
-	private Integer typeUid;
-	private Integer nbUrl;
-
 	private String description;
+	private List<Event> eventsDone;
+	private List<Event> eventsToDo;
+	private String name;
+	private Integer nbUrl;
+	private Integer projetUid;
 
-	public Integer getNbUrl() {
-		return nbUrl;
-	}
+	private Integer typeUid;
 
-	public void setNbUrl(Integer nbUrl) {
-		this.nbUrl = nbUrl;
-	}
+	private Integer uid;
+
 	private List<UrlToCheck> urlToCheckList;
 
 	public String getDescription() {
 		return description;
 	}
 
+	public List<Event> getEventsDone() {
+		return eventsDone;
+	}
+
+	public List<Event> getEventsToDo() {
+		return eventsToDo;
+	}
+
 	public String getName() {
 		return name;
+	}
+
+	public Integer getNbUrl() {
+		return nbUrl;
 	}
 
 	public Integer getProjetUid() {
@@ -53,10 +61,21 @@ public class ProjetListUrl {
 		this.description = description;
 	}
 
+	public void setEventsDone(List<Event> eventsDone) {
+		this.eventsDone = eventsDone;
+	}
+
+	public void setEventsToDo(List<Event> eventsToDo) {
+		this.eventsToDo = eventsToDo;
+	}
+
 	public void setName(String name) {
 		this.name = name;
 	}
 
+	public void setNbUrl(Integer nbUrl) {
+		this.nbUrl = nbUrl;
+	}
 
 	public void setProjetUid(Integer projetUid) {
 		this.projetUid = projetUid;
@@ -69,6 +88,7 @@ public class ProjetListUrl {
 	public void setUid(Integer uid) {
 		this.uid = uid;
 	}
+
 	public void setUrlToCheckList(List<UrlToCheck> urlToCheckList) {
 		this.urlToCheckList = urlToCheckList;
 	}
