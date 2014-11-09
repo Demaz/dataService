@@ -21,6 +21,7 @@ import seo.scanner.domain.Event;
 import seo.scanner.domain.Parameters;
 import seo.scanner.domain.Projet;
 import seo.scanner.domain.ProjetListUrl;
+import seo.scanner.domain.UrlCheckResult;
 import seo.scanner.domain.UrlToCheck;
 import seo.scanner.domain.User;
 import seo.scanner.domain.Useragent;
@@ -32,28 +33,28 @@ public class ProjetService {
 
 	private JdbcTemplate jdbcTemplate;
 
-	public UrlToCheck addCheckResult(final UrlToCheck urlToCheck) {
+	public UrlToCheck addCheckResult(final UrlCheckResult urlCheckResult) {
 		KeyHolder keyHolder = new GeneratedKeyHolder();
 		getJdbcTemplate().update(new PreparedStatementCreator() {
 			public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
 				PreparedStatement ps = connection.prepareStatement(
-						"insert into tprojetslisturlresults(url,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,projetListUrlUid,urlUid) values(?,?,?,?,?,?,?,?,?)",
+						"insert into tprojetslisturlresults(url,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,projetListUrlUid,eventUid) values(?,?,?,?,?,?,?,?,?)",
 						new String[] { "uid" });
-				ps.setString(1, urlToCheck.getUrl());
-				ps.setString(2, urlToCheck.getRedirectionUrl1());
-				ps.setString(3, urlToCheck.getRedirectionUrlCode1());
-				ps.setString(4, urlToCheck.getRedirectionUrl2());
-				ps.setString(5, urlToCheck.getRedirectionUrlCode2());
-				ps.setString(6, urlToCheck.getRedirectionUrl3());
-				ps.setString(7, urlToCheck.getRedirectionUrlCode3());
-				ps.setInt(8, urlToCheck.getProjetListUrlUid());
-				ps.setInt(9, urlToCheck.getUid());
+				ps.setString(1, urlCheckResult.getUrl());
+				ps.setString(2, urlCheckResult.getRedirectionUrl1());
+				ps.setString(3, urlCheckResult.getRedirectionUrlCode1());
+				ps.setString(4, urlCheckResult.getRedirectionUrl2());
+				ps.setString(5, urlCheckResult.getRedirectionUrlCode2());
+				ps.setString(6, urlCheckResult.getRedirectionUrl3());
+				ps.setString(7, urlCheckResult.getRedirectionUrlCode3());
+				ps.setInt(8, urlCheckResult.getProjetListUrlUid());
+				ps.setInt(9, urlCheckResult.getEventUid());
 				return ps;
 			}
 		}, keyHolder);
-		urlToCheck.setUid(keyHolder.getKey().intValue());
+		urlCheckResult.setUid(keyHolder.getKey().intValue());
 
-		return urlToCheck;
+		return urlCheckResult;
 	}
 
 	public ProjetListUrl addListUrl(final ProjetListUrl projetListUrl, final Integer userUid) {
@@ -223,6 +224,15 @@ public class ProjetService {
 		return users;
 	}
 
+	public List<UrlCheckResult> getCrawResults(final Integer eventStartUid, final Integer eventEndUid,
+			Integer projetListUrlUid) {
+		List<Map<String, Object>> rows = getJdbcTemplate()
+				.queryForList(
+						"Select uid, url, eventUid,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,checkDate,projetListUrlUid from tprojetslisturlresults where eventUid >= ? and eventUid <= ? and projetlisturluid = ? order by uid desc limit 100",
+						eventStartUid, eventEndUid, projetListUrlUid);
+		return mapUrlCheckResultWithResultSet(rows);
+	}
+
 	public List<Event> getEventsDoneOfUrlList(Integer projetListUrlUid) {
 		List<Map<String, Object>> rows = getJdbcTemplate()
 				.queryForList(
@@ -245,6 +255,14 @@ public class ProjetService {
 			jdbcTemplate = new JdbcTemplate(this.dataSource);
 		}
 		return jdbcTemplate;
+	}
+
+	public List<Event> getLastEventDoneOfUrlList(Integer projetListUrlUid) {
+		List<Map<String, Object>> rows = getJdbcTemplate()
+				.queryForList(
+						"Select uid, projetlisturluid , createdate , startdate , isinprogress , enddate from tprojetslisturlevents where startDate is not null and endDate is not null and isInProgress = false and projetListUrlUid = ? order by endDate desc",
+						projetListUrlUid);
+		return mapEventResultSet(rows);
 	}
 
 	public Parameters getParameters(Integer projetListUrlUid) {
@@ -346,12 +364,12 @@ public class ProjetService {
 		return "";
 	}
 
-	public List<UrlToCheck> getUrlToCheck(Integer projetListUrlUid) {
+	public List<UrlCheckResult> getUrlToCheck(Integer projetListUrlUid) {
 		List<Map<String, Object>> rowsUrlToCheck = getJdbcTemplate()
 				.queryForList(
 						"Select uid, url,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,projetListUrlUid from turltocheck where projetlisturluid = ?",
 						projetListUrlUid);
-		return mapUrlToCheckWithResultSet(rowsUrlToCheck);
+		return mapUrlCheckResultWithResultSet(rowsUrlToCheck);
 	}
 
 	public List<Useragent> getUseragents() {
@@ -405,6 +423,30 @@ public class ProjetService {
 		projet.setDescription(row.get("description").toString());
 		projet.setDomaine((row.get("domaine").toString()));
 		return projet;
+	}
+
+	private List<UrlCheckResult> mapUrlCheckResultWithResultSet(List<Map<String, Object>> rows) {
+		List<UrlCheckResult> urlCheckResults = new ArrayList<UrlCheckResult>();
+		for (Map<String, Object> row : rows) {
+			UrlCheckResult urlCheckResult = new UrlCheckResult();
+			urlCheckResult.setUid(Integer.valueOf(row.get("uid").toString()));
+			urlCheckResult.setProjetListUrlUid(Integer.valueOf(row.get("projetListUrlUid").toString()));
+			urlCheckResult.setUrl(getRowStringValue(row, "url"));
+			urlCheckResult.setRedirectionUrl1(getRowStringValue(row, "redirectionUrl1"));
+			urlCheckResult.setRedirectionUrlCode1(getRowStringValue(row, "redirectionUrlCode1"));
+			urlCheckResult.setRedirectionUrl2(getRowStringValue(row, "redirectionUrl2"));
+			urlCheckResult.setRedirectionUrlCode2(getRowStringValue(row, "redirectionUrlCode2"));
+			urlCheckResult.setRedirectionUrl3(getRowStringValue(row, "redirectionUrl3"));
+			urlCheckResult.setRedirectionUrlCode3(getRowStringValue(row, "redirectionUrlCode3"));
+
+			if (row.containsKey("eventUid")) {
+				urlCheckResult.setEventUid(Integer.valueOf(row.get("eventUid").toString()));
+				urlCheckResult.setCheckDate((Date) row.get("checkDate"));
+			}
+
+			urlCheckResults.add(urlCheckResult);
+		}
+		return urlCheckResults;
 	}
 
 	private List<UrlToCheck> mapUrlToCheckWithResultSet(List<Map<String, Object>> rows) {
