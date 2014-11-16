@@ -7,6 +7,7 @@ public class ProjetListUrl {
 
 	private String description;
 	private List<Event> eventsDone;
+	private List<Event> eventsInProgress;
 	private List<Event> eventsToDo;
 	private String name;
 	private Integer nbUrl;
@@ -24,6 +25,10 @@ public class ProjetListUrl {
 
 	public List<Event> getEventsDone() {
 		return eventsDone;
+	}
+
+	public List<Event> getEventsInProgress() {
+		return eventsInProgress;
 	}
 
 	public List<Event> getEventsToDo() {
@@ -63,6 +68,10 @@ public class ProjetListUrl {
 
 	public void setEventsDone(List<Event> eventsDone) {
 		this.eventsDone = eventsDone;
+	}
+
+	public void setEventsInProgress(List<Event> eventsInProgress) {
+		this.eventsInProgress = eventsInProgress;
 	}
 
 	public void setEventsToDo(List<Event> eventsToDo) {

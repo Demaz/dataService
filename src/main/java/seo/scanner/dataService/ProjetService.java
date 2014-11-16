@@ -228,7 +228,7 @@ public class ProjetService {
 			Integer projetListUrlUid) {
 		List<Map<String, Object>> rows = getJdbcTemplate()
 				.queryForList(
-						"Select uid, url, eventUid,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,checkDate,projetListUrlUid from tprojetslisturlresults where eventUid >= ? and eventUid <= ? and projetlisturluid = ? order by uid desc limit 100",
+						"Select uid, url, eventUid,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,checkDate,projetListUrlUid from tprojetslisturlresults where eventUid >= ? and eventUid <= ? and projetlisturluid = ? order by uid desc",
 						eventStartUid, eventEndUid, projetListUrlUid);
 		return mapUrlCheckResultWithResultSet(rows);
 	}
@@ -237,6 +237,14 @@ public class ProjetService {
 		List<Map<String, Object>> rows = getJdbcTemplate()
 				.queryForList(
 						"Select uid, projetlisturluid , createdate , startdate , isinprogress , enddate from tprojetslisturlevents where startDate is not null and endDate is not null and isInProgress = false and projetListUrlUid = ?",
+						projetListUrlUid);
+		return mapEventResultSet(rows);
+	}
+
+	public List<Event> getEventsInProgressOfUrlList(Integer projetListUrlUid) {
+		List<Map<String, Object>> rows = getJdbcTemplate()
+				.queryForList(
+						"Select uid, projetlisturluid , createdate , startdate , isinprogress , enddate from tprojetslisturlevents where startDate is not null and endDate is null and isInProgress = true and projetListUrlUid = ?",
 						projetListUrlUid);
 		return mapEventResultSet(rows);
 	}
@@ -269,7 +277,8 @@ public class ProjetService {
 		Parameters parameters = new Parameters();
 		List<Map<String, Object>> rowsUsers = getJdbcTemplate()
 				.queryForList(
-						"Select uid, useragentuid , projetListUrlUid , jourMois, jour, heure, minute, frequence  from tprojetslisturlparameters");
+						"Select uid, useragentuid , projetListUrlUid , jourMois, jour, heure, minute, frequence  from tprojetslisturlparameters where projetListUrlUid = ?",
+						projetListUrlUid);
 		for (Map<String, Object> row : rowsUsers) {
 
 			parameters.setUserAgentUid(Integer.valueOf(row.get("useragentuid").toString()));
@@ -295,11 +304,11 @@ public class ProjetService {
 	}
 
 	public ProjetListUrl getProjetListUrl(Integer userUid, Integer projetUid, Integer projetListUrlUid,
-			Boolean loadEventsTodo, Boolean loadEventsDone) {
+			Boolean loadEventsTodo, Boolean loadEventsDone, Boolean loadEventsInProgress) {
 		ProjetListUrl projetListUrl = new ProjetListUrl();
 		List<Map<String, Object>> rowsProjetListUrl = getJdbcTemplate()
 				.queryForList(
-						"Select plu.uid, plu.projetUid, plu.name, plu.description , (Select count(*) from turltocheck where projetlisturluid = plu.uid) as nburl from tprojetsListUrl plu inner join tprojets p on plu.projetUid = p.uid where plu.projetUid = ? and p.uid in (Select projetUid from tprojetsusers pu where pu.userUid = ?) and plu.uid = ?",
+						"Select plu.uid, plu.projetUid, plu.name, plu.description , (Select count(*) from turltocheck where projetlisturluid = plu.uid) as nburl, plu.typeUid from tprojetsListUrl plu inner join tprojets p on plu.projetUid = p.uid where plu.projetUid = ? and p.uid in (Select projetUid from tprojetsusers pu where pu.userUid = ?) and plu.uid = ?",
 						projetUid, userUid, projetListUrlUid);
 		if (rowsProjetListUrl.size() > 0) {
 			projetListUrl = mapProjetListUrlWithResultSet(rowsProjetListUrl.get(0));
@@ -309,11 +318,19 @@ public class ProjetService {
 			if (loadEventsDone) {
 				projetListUrl.setEventsDone(getEventsDoneOfUrlList(projetListUrlUid));
 			}
+			if (loadEventsInProgress) {
+				projetListUrl.setEventsInProgress(getEventsInProgressOfUrlList(projetListUrlUid));
+			}
 			List<Map<String, Object>> rowsUrlToCheck = getJdbcTemplate()
 					.queryForList(
 							"Select uid, url,redirectionUrl1,redirectionUrlCode1,redirectionUrl2,redirectionUrlCode2,redirectionUrl3,redirectionUrlCode3,projetListUrlUid from turltocheck where projetlisturluid = ? limit 250",
 							projetListUrl.getUid());
-			projetListUrl.setUrlToCheckList(mapUrlToCheckWithResultSet(rowsUrlToCheck));
+
+			List<UrlToCheck> urlToCheckList = mapUrlToCheckWithResultSet(rowsUrlToCheck);
+			projetListUrl.setUrlToCheckList(urlToCheckList);
+			if (urlToCheckList.size() > 100) {
+				projetListUrl.setUrlToCheckList(urlToCheckList.subList(0, 100));
+			}
 		}
 		return projetListUrl;
 	}
@@ -335,10 +352,12 @@ public class ProjetService {
 		List<ProjetListUrl> projetListUrlListe = new ArrayList<ProjetListUrl>();
 		List<Map<String, Object>> rowsProjetListUrl = getJdbcTemplate()
 				.queryForList(
-						"Select plu.uid, plu.projetUid, plu.name, plu.description , (Select count(*) from turltocheck where projetlisturluid = plu.uid) as nburl from tprojetsListUrl plu inner join tprojets p on plu.projetUid = p.uid where plu.projetUid = ? and p.uid in (select projetUid from tprojetsusers pu where pu.userUid = ?)",
+						"Select plu.uid, plu.projetUid, plu.name, plu.description , (Select count(*) from turltocheck where projetlisturluid = plu.uid) as nburl, plu.typeUid from tprojetsListUrl plu inner join tprojets p on plu.projetUid = p.uid where plu.projetUid = ? and p.uid in (select projetUid from tprojetsusers pu where pu.userUid = ?)",
 						projetUid, userUid);
 		for (Map<String, Object> row : rowsProjetListUrl) {
-			projetListUrlListe.add(mapProjetListUrlWithResultSet(row));
+			ProjetListUrl projetListUrl = mapProjetListUrlWithResultSet(row);
+			projetListUrl.setEventsDone(getEventsDoneOfUrlList(projetListUrl.getUid()));
+			projetListUrlListe.add(projetListUrl);
 		}
 		return projetListUrlListe;
 	}
@@ -412,6 +431,7 @@ public class ProjetService {
 		projetListUrl.setName(row.get("name").toString());
 		projetListUrl.setDescription(row.get("description").toString());
 		projetListUrl.setNbUrl(Integer.valueOf(row.get("nburl").toString()));
+		projetListUrl.setTypeUid(Integer.valueOf(row.get("typeUid").toString()));
 		return projetListUrl;
 
 	}
@@ -534,6 +554,22 @@ public class ProjetService {
 		return event;
 	}
 
+	public Projet updateProjet(final Projet projet) {
+		getJdbcTemplate().update(new PreparedStatementCreator() {
+			public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
+				PreparedStatement ps = connection
+						.prepareStatement("update tprojets set name = ?, description = ?, domaine = ? where uid = ?");
+				ps.setString(1, projet.getName());
+				ps.setString(2, projet.getDescription());
+				ps.setString(3, projet.getDomaine());
+				ps.setInt(4, projet.getUid());
+				return ps;
+			}
+		});
+
+		return projet;
+	}
+
 	public UrlToCheck updateUrlInList(final UrlToCheck urlToCheck) {
 		getJdbcTemplate().update(new PreparedStatementCreator() {
 			public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
@@ -552,5 +588,4 @@ public class ProjetService {
 		});
 		return urlToCheck;
 	}
-
 }
